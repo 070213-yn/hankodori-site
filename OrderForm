@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Form | Hankodori</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .product {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+      padding: 1rem 0;
+    }
+    .product img {
+      width: 150px;
+      height: 150px;
+      object-fit: contain;
+      margin-right: 1rem;
+    }
+    .product-info {
+      flex-grow: 1;
+    }
+    .product-price, .product-qty, .product-total {
+      text-align: center;
+      width: 100px;
+    }
+    .sticky-total {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fffaf5;
+      border-top: 1px solid #ccc;
+      padding: 1rem;
+      text-align: right;
+      font-weight: bold;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Hankodori Order Form</h1>
+  </header>
+
+  <main>
+    <form id="orderForm" action="https://formsubmit.co/oshin5roroa@gmail.com" method="POST">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_template" value="table">
+      <input type="hidden" name="_next" value="https://070213-yn.github.io/hankodori-site/thanks.html">
+
+      <!-- 商品一覧はJavaScriptで生成されます -->
+
+      <h2>Your Info</h2>
+      <label>Email: <input type="email" name="email" required></label><br><br>
+      <label>Notes:<br>
+        <textarea name="notes" rows="4" cols="40"></textarea>
+      </label><br><br>
+
+      <input type="hidden" name="total_price" id="hiddenTotalPrice" value="">
+      <input type="hidden" name="order_summary" id="orderSummary" value="">
+
+      <button type="submit">Send Order</button>
+    </form>
+  </main>
+
+  <div class="sticky-total">
+    Total: <span id="totalPrice">¥0</span>
+  </div>
+
+  <script>
+    const products = [
+      ["0001", "Bear memo frame", "くまのメモ枠", "55×90mm", "G", 1673],
+      ["0002", "Stamp-style bird (LOVE)", "切手風 小鳥『LOVE』", "30×40mm", "B", 596],
+      ["0003", "Little bird (Swing)", "小鳥(ブランコ)", "26×30mm", "A1", 594],
+      ["0004", "Violet", "スミレ", "30×40mm", "B", 596],
+      ["0005", "Apple", "つながるりんご", "15×60mm", "J", 596],
+      ["0006", "Thread winding", "糸巻き", "30×40mm", "B", 596],
+      ["0007", "Vase", "一輪挿し", "30×40mm", "B", 596],
+      ["0008", "Fruit", "くだもの", "30×40mm", "B", 596],
+      ["0009", "Merci Beaucoup!", "Merci Beaucoup!", "15×60mm", "J", 858],
+      ["0010", "Birds (UN, DEUX, TROIS)", "小鳥(UN,DEUX,TROIS)", "26×55mm", "A2", 743],
+      ["0011", "Birds (4 frames)", "小鳥(4コマ)", "26×65mm", "A3", 952],
+      ["0012", "Good job", "よくできました", "30×40mm", "B", 596],
+      ["0013", "Postage stamp (Delivery)", "切手風 お届けドウモデス", "30×40mm", "B", 596],
+      ["0014", "Important delivery (Small)", "大切なお届けものです。(小)", "30×40mm", "B", 596],
+      ["0015", "Important delivery (Big)", "大切なお届けものです。(大)", "40×40mm", "B", 715],
+      ["0016", "hula", "hula", "30×40mm", "B", 715],
+      ["0017", "Summer Greeting", "Summer Greeting", "26×55mm", "A2", 1144],
+      ["0018", "Float Trio", "うかうか3組", "26×55mm", "A2", 1144],
+      ["0019", "Sailboat", "ヨット", "26×30mm", "A1", 715],
+      ["0020", "Fish", "魚", "26×30mm", "A1", 715],
+      ["0021", "Bubble", "泡", "26×30mm", "A1", 715],
+      ["0022", "Bird (How are you?)", "鳥「お元気ですか？」", "26×30mm", "A1", 715],
+      ["0023", "Camera girl", "カメラ女子(女の子)", "30×40mm", "B", 715],
+      ["0024", "Prayer", "お祈り", "30×40mm", "B", 715],
+      ["0025", "Girl (I Love Sewing)", "裁縫大好き女子『I Love Sewing』", "30×40mm", "B", 715],
+      ["0026", "How are you? (Girl)", "お元気ですか？（女の子）", "30×40mm", "B", 715],
+      ["0027", "Mushroom", "きのこ", "26×30mm", "A1", 596],
+      ["0028", "Flower", "花", "26×30mm", "A1", 596],
+      ["0029", "Twig bird", "小枝小鳥", "26×30mm", "A1", 464],
+      ["0030", "", "", "", "", 0]
+    ];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("orderForm");
+      const totalDisplay = document.getElementById("totalPrice");
+
+      products.forEach(([id, en, ja, size, cat, price]) => {
+        const product = document.createElement("div");
+        product.className = "product";
+
+        product.innerHTML = `
+          <img src="images/${id}.jpg" alt="${en}">
+          <div class="product-info">
+            <strong>${id}</strong><br>
+            ${en} / ${ja}<br>
+            Size: ${size} / Category: ${cat}<br>
+            Wholesale: ¥${price.toLocaleString()}
+          </div>
+          <div class="product-qty">
+            <input type="number" min="0" value="0" name="${id}" data-price="${price}" onchange="calculateTotals()">
+          </div>
+          <div class="product-total">¥0</div>
+        `;
+
+        form.insertBefore(product, form.querySelector("h2"));
+      });
+
+      form.addEventListener("submit", () => {
+        const hiddenTotal = document.getElementById("hiddenTotalPrice");
+        const orderSummary = document.getElementById("orderSummary");
+        let summary = "";
+
+        document.querySelectorAll(".product").forEach(product => {
+          const input = product.querySelector("input");
+          const qty = parseInt(input.value || '0');
+          if (qty > 0) {
+            const id = input.name;
+            const name = product.querySelector(".product-info").textContent.replace(/\n/g, " ").trim();
+            summary += `${id}: ${qty} pcs\n`;
+          }
+        });
+
+        hiddenTotal.value = document.getElementById("totalPrice").textContent;
+        orderSummary.value = summary;
+      });
+    });
+
+    function calculateTotals() {
+      let total = 0;
+      document.querySelectorAll('.product').forEach(product => {
+        const input = product.querySelector('input');
+        const qty = parseInt(input.value || '0');
+        const price = parseInt(input.dataset.price);
+        const subtotal = qty * price;
+        product.querySelector('.product-total').textContent = `¥${subtotal.toLocaleString()}`;
+        total += subtotal;
+      });
+      document.getElementById('totalPrice').textContent = `¥${total.toLocaleString()}`;
+    }
+  </script>
+
+  <footer>
+    <p>&copy; 2025 Hankodori</p>
+  </footer>
+</body>
+</html>
